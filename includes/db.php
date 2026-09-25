@@ -11,25 +11,34 @@ $isLocal = (
 );
 
 // Database Configurations
-if ($isLocal) {
+if (getenv('DB_HOST')) {
+    // Cloud / Vercel Environment Variables
+    define('DB_HOST', getenv('DB_HOST'));
+    define('DB_USER', getenv('DB_USER') ?: 'root');
+    define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+    define('DB_NAME', getenv('DB_NAME') ?: 'portfolio');
+    define('DB_PORT', getenv('DB_PORT') ? (int)getenv('DB_PORT') : 3306);
+} elseif ($isLocal) {
     // Local XAMPP Environment
     define('DB_HOST', '127.0.0.1');
     define('DB_USER', 'root');
     define('DB_PASS', '');
     define('DB_NAME', 'portfolio');
+    define('DB_PORT', 3306);
 } else {
     // Live / Production Hosting Environment (Hostinger)
     define('DB_HOST', 'localhost');
     define('DB_USER', 'u715047215_portfolio');
     define('DB_PASS', 'Ashraf@123');
     define('DB_NAME', 'u715047215_portfolio');
+    define('DB_PORT', 3306);
 }
 
 // Attempt connection with graceful fallback
 $conn = null;
 try {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 } catch (Throwable $e) {
     // Fallback: If production credentials failed on local machine, try local root
     try {
