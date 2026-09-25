@@ -1,18 +1,6 @@
 {
   "functions": {
-    "*.php": {
-      "runtime": "vercel-php@0.7.1"
-    },
     "api/*.php": {
-      "runtime": "vercel-php@0.7.1"
-    },
-    "dashboard/*.php": {
-      "runtime": "vercel-php@0.7.1"
-    },
-    "oauth/*.php": {
-      "runtime": "vercel-php@0.7.1"
-    },
-    "oauth/callback/*.php": {
       "runtime": "vercel-php@0.7.1"
     }
   },
@@ -30,28 +18,12 @@
       "dest": "/uploads/$1"
     },
     {
-      "src": "/oauth/callback/?$",
-      "dest": "/oauth/callback.php"
-    },
-    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
-      "src": "/dashboard/(.*)",
-      "dest": "/dashboard/$1"
-    },
-    {
-      "src": "/(login|register|logout|contact-send|google-auth)",
-      "dest": "/$1.php"
-    },
-    {
-      "src": "/(.*\\.php)",
-      "dest": "/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.php"
+      "dest": "/api/index.php"
     }
   ]
 }

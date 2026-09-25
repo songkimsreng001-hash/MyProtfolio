@@ -34,8 +34,8 @@ function getAppBaseUrl() {
     $dir = dirname($script);
     $dir = str_replace('\\', '/', $dir);
 
-    // If script is in a subdirectory (e.g., /oauth or /dashboard), step back to root
-    while (in_array(basename($dir), ['oauth', 'callback', 'dashboard'])) {
+    // If script is in a subdirectory (e.g., /oauth, /dashboard, or /api), step back to root
+    while (in_array(basename($dir), ['oauth', 'callback', 'dashboard', 'api'])) {
         $dir = dirname($dir);
     }
 
