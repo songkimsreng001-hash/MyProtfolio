@@ -41,31 +41,43 @@ try {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 } catch (Throwable $e) {
     // Fallback: If production credentials failed on local machine, try local root
-    try {
-        $conn = new mysqli('127.0.0.1', 'root', '', 'portfolio');
-    } catch (Throwable $fallbackError) {
+    if ($isLocal) {
+        try {
+            $conn = new mysqli('127.0.0.1', 'root', '', 'portfolio');
+        } catch (Throwable $fallbackError) {
+            $conn = null;
+            error_log('Database connection error: ' . $fallbackError->getMessage());
+        }
+    } else {
+        $conn = null;
         error_log('Database connection error: ' . $e->getMessage());
-        http_response_code(500);
+    }
+}
+
+// If DB connection failed, only terminate if the request strictly requires DB (e.g., API or POST submissions)
+if (!$conn || $conn->connect_error) {
+    $conn = null;
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $isApiOrForm = (strpos($uri, '/api/') !== false) || 
+                   (strpos($uri, 'contact-send') !== false) ||
+                   (strpos($uri, 'google-auth') !== false) ||
+                   ($_SERVER['REQUEST_METHOD'] === 'POST');
+
+    if ($isApiOrForm) {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+        }
         die(json_encode([
             'status'  => 'error',
-            'message' => 'Database service temporarily unavailable. Please try again shortly.'
+            'message' => 'Database connection failed. Please ensure DB environment variables are configured on Vercel.'
         ]));
     }
 }
 
-if (!$conn || $conn->connect_error) {
-    error_log('Database connection error: ' . ($conn ? $conn->connect_error : 'Unknown error'));
-    http_response_code(500);
-    die(json_encode([
-        'status'  => 'error',
-        'message' => 'Database service temporarily unavailable. Please try again shortly.'
-    ]));
-}
-
-$conn->set_charset('utf8mb4');
-
-// Auto-check and add missing columns/tables if needed (guard to run once per session)
-if (!isset($_SESSION['portfolio_schema_verified'])) {
+// Auto-check and add missing columns/tables if connected (guard to run once per session)
+if ($conn && !isset($_SESSION['portfolio_schema_verified'])) {
+    $conn->set_charset('utf8mb4');
     $columns = [];
     $colResult = $conn->query("SHOW COLUMNS FROM users");
 if ($colResult) {
