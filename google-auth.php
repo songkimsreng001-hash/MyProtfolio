@@ -41,7 +41,6 @@ if (function_exists('curl_init')) {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-
     if ($httpCode === 200 && $response) {
         $payload = json_decode($response, true);
     }
