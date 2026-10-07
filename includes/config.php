@@ -12,7 +12,12 @@ if (!defined('GOOGLE_CLIENT_SECRET')) {
 }
 
 if (!defined('GOOGLE_REDIRECT_URI')) {
-    define('GOOGLE_REDIRECT_URI', 'http://localhost/portfolio/oauth/callback');
+    $envRedirect = getenv('GOOGLE_REDIRECT_URI');
+    if (!empty($envRedirect)) {
+        define('GOOGLE_REDIRECT_URI', $envRedirect);
+    } else {
+        define('GOOGLE_REDIRECT_URI', getAppBaseUrl() . '/oauth/callback');
+    }
 }
 
 // Application Info & Admin Email
@@ -50,6 +55,9 @@ function getAppBaseUrl() {
  * Generate Google OAuth 2.0 Authorization URL for web redirect flow
  */
 function getGoogleAuthUrl() {
+    if (empty(GOOGLE_CLIENT_ID)) {
+        return 'javascript:void(0)';
+    }
     $params = [
         'client_id'     => GOOGLE_CLIENT_ID,
         'redirect_uri'  => GOOGLE_REDIRECT_URI,

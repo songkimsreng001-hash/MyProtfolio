@@ -170,6 +170,22 @@ function toggleVis(inputId, iconId) {
     }
 }
 
+// Guard custom Google button if Client ID is not configured
+const customGoogleBtn = document.getElementById('customGoogleBtn');
+if (customGoogleBtn) {
+    customGoogleBtn.addEventListener('click', function (e) {
+        <?php if (empty(GOOGLE_CLIENT_ID)): ?>
+        e.preventDefault();
+        Swal.fire({
+            icon: 'warning',
+            title: 'Google Sign-Up Not Configured',
+            text: 'Google OAuth has not been configured yet. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.',
+            confirmButtonColor: '#6c63ff'
+        });
+        <?php endif; ?>
+    });
+}
+
 // Google Credential Callback for GIS
 function handleGoogleCredentialResponse(response) {
     if (!response || !response.credential) {
