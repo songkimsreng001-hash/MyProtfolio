@@ -2,6 +2,11 @@
 // includes/config.php
 // Application Configuration
 
+// Load local development configuration if present
+if (file_exists(__DIR__ . '/local-config.php')) {
+    include_once __DIR__ . '/local-config.php';
+}
+
 // Google OAuth 2.0 Credentials
 if (!defined('GOOGLE_CLIENT_ID')) {
     define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');

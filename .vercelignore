@@ -1,0 +1,6 @@
+# Vercel deployment ignore list
+sql/
+.git
+.gitignore
+README.md
+includes/local-config.php

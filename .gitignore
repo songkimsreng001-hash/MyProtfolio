@@ -1,0 +1,4 @@
+# Environment and secret configuration
+.env
+.env.*
+includes/local-config.php
