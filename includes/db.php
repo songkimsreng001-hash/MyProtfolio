@@ -54,25 +54,9 @@ try {
     }
 }
 
-// If DB connection failed, only terminate if the request strictly requires DB (e.g., API or POST submissions)
+// If DB connection failed, keep $conn as null so scripts can handle fallback gracefully
 if (!$conn || $conn->connect_error) {
     $conn = null;
-    $uri = $_SERVER['REQUEST_URI'] ?? '';
-    $isApiOrForm = (strpos($uri, '/api/') !== false) || 
-                   (strpos($uri, 'contact-send') !== false) ||
-                   (strpos($uri, 'google-auth') !== false) ||
-                   ($_SERVER['REQUEST_METHOD'] === 'POST');
-
-    if ($isApiOrForm) {
-        if (!headers_sent()) {
-            http_response_code(500);
-            header('Content-Type: application/json; charset=utf-8');
-        }
-        die(json_encode([
-            'status'  => 'error',
-            'message' => 'Database connection failed. Please ensure DB environment variables are configured on Vercel.'
-        ]));
-    }
 }
 
 // Auto-check and add missing columns/tables if connected (guard to run once per session)

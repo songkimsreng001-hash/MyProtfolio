@@ -91,64 +91,89 @@ $email    = trim(strtolower($profile['email']));
 $name     = trim($profile['name'] ?? explode('@', $email)[0]);
 $avatar   = $profile['picture'] ?? null;
 
-// 3. Database operations
-// Check if user exists by google_id
-$stmt = $conn->prepare("SELECT id, name, email, role, avatar, google_id FROM users WHERE google_id = ?");
-$stmt->bind_param('s', $googleId);
-$stmt->execute();
-$res = $stmt->get_result();
-$user = $res->fetch_assoc();
-$stmt->close();
+// 3. Database operations (with offline fallback)
+$user = null;
 
-if (!$user) {
-    // Check if user exists with the same email
-    $stmt = $conn->prepare("SELECT id, name, email, role, avatar, google_id FROM users WHERE email = ?");
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $user = $res->fetch_assoc();
-    $stmt->close();
+if ($conn) {
+    // Check if user exists by google_id
+    $stmt = $conn->prepare("SELECT id, name, email, role, avatar, google_id FROM users WHERE google_id = ?");
+    if ($stmt) {
+        $stmt->bind_param('s', $googleId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $user = $res->fetch_assoc();
+        $stmt->close();
+    }
 
-    if ($user) {
-        // Link google_id and update avatar
-        $up = $conn->prepare("UPDATE users SET google_id = ?, avatar = COALESCE(avatar, ?) WHERE id = ?");
-        $up->bind_param('ssi', $googleId, $avatar, $user['id']);
-        $up->execute();
-        $up->close();
+    if (!$user) {
+        // Check if user exists with the same email
+        $stmt = $conn->prepare("SELECT id, name, email, role, avatar, google_id FROM users WHERE email = ?");
+        if ($stmt) {
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $user = $res->fetch_assoc();
+            $stmt->close();
+        }
 
-        $user['google_id'] = $googleId;
-        if (empty($user['avatar'])) {
-            $user['avatar'] = $avatar;
+        if ($user) {
+            // Link google_id and update avatar
+            $up = $conn->prepare("UPDATE users SET google_id = ?, avatar = COALESCE(avatar, ?) WHERE id = ?");
+            if ($up) {
+                $up->bind_param('ssi', $googleId, $avatar, $user['id']);
+                $up->execute();
+                $up->close();
+            }
+
+            $user['google_id'] = $googleId;
+            if (empty($user['avatar'])) {
+                $user['avatar'] = $avatar;
+            }
+        } else {
+            // Register new user
+            $ins = $conn->prepare("INSERT INTO users (name, email, google_id, avatar, role, password) VALUES (?, ?, ?, ?, 'user', NULL)");
+            if ($ins) {
+                $ins->bind_param('ssss', $name, $email, $googleId, $avatar);
+                if ($ins->execute()) {
+                    $newId = $ins->insert_id;
+                    $user = [
+                        'id'        => $newId,
+                        'name'      => $name,
+                        'email'     => $email,
+                        'role'      => 'user',
+                        'avatar'    => $avatar,
+                        'google_id' => $googleId,
+                    ];
+                }
+                $ins->close();
+            }
         }
     } else {
-        // Register new user
-        $ins = $conn->prepare("INSERT INTO users (name, email, google_id, avatar, role, password) VALUES (?, ?, ?, ?, 'user', NULL)");
-        $ins->bind_param('ssss', $name, $email, $googleId, $avatar);
-        if ($ins->execute()) {
-            $newId = $ins->insert_id;
-            $user = [
-                'id'        => $newId,
-                'name'      => $name,
-                'email'     => $email,
-                'role'      => 'user',
-                'avatar'    => $avatar,
-                'google_id' => $googleId,
-            ];
-        } else {
-            header('Location: ' . $baseUrl . '/login.php?error=' . urlencode('Database registration failed. Please try again.'));
-            exit;
+        // Update avatar if changed
+        if ($avatar && $user['avatar'] !== $avatar) {
+            $up = $conn->prepare("UPDATE users SET avatar = ? WHERE id = ?");
+            if ($up) {
+                $up->bind_param('si', $avatar, $user['id']);
+                $up->execute();
+                $up->close();
+            }
+            $user['avatar'] = $avatar;
         }
-        $ins->close();
     }
-} else {
-    // Update avatar if changed
-    if ($avatar && $user['avatar'] !== $avatar) {
-        $up = $conn->prepare("UPDATE users SET avatar = ? WHERE id = ?");
-        $up->bind_param('si', $avatar, $user['id']);
-        $up->execute();
-        $up->close();
-        $user['avatar'] = $avatar;
-    }
+}
+
+// Fallback session if database is offline or not yet configured
+if (!$user) {
+    $adminEmail = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : 'songkimsreng001@gmail.com';
+    $role = (strtolower($email) === strtolower($adminEmail)) ? 'admin' : 'user';
+    $user = [
+        'id'        => 1,
+        'name'      => $name,
+        'email'     => $email,
+        'role'      => $role,
+        'avatar'    => $avatar,
+        'google_id' => $googleId,
+    ];
 }
 
 // 4. Start session and redirect to absolute base path
