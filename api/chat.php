@@ -17,6 +17,15 @@ if (!$user) {
     exit;
 }
 
+if (!$conn) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        echo json_encode(['status' => 'error', 'message' => 'Chat service is temporarily offline: Database is not connected.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'messages' => []]);
+    exit;
+}
+
 $userId    = (int)$user['id'];
 $userName  = trim($user['name']);
 $userEmail = trim($user['email']);

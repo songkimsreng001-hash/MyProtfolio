@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
                 $error = 'Password must be at least 8 characters and contain both letters and numbers.';
             } elseif ($password !== $confirm) {
                 $error = 'Passwords do not match.';
+            } elseif (!$conn) {
+                $error = 'Database service is currently offline. Please sign up using "Sign up with Google".';
             } else {
                 // Check if email already exists
                 $check = $conn->prepare("SELECT id FROM users WHERE email = ?");

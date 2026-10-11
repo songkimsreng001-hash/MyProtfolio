@@ -16,15 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $flashMsg = 'Invalid security token. Please refresh and try again.';
         $flashType = 'error';
+    } elseif (!$conn) {
+        $flashMsg = 'Cannot delete user: Database is currently offline.';
+        $flashType = 'error';
     } else {
         $delId = (int)($_POST['user_id'] ?? 0);
         if ($delId > 0 && $delId !== (int)$_SESSION['user_id']) { // prevent self-delete
             $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-            $stmt->bind_param('i', $delId);
-            $stmt->execute();
-            $stmt->close();
-            $flashMsg = 'The user has been removed successfully.';
-            $flashType = 'success';
+            if ($stmt) {
+                $stmt->bind_param('i', $delId);
+                $stmt->execute();
+                $stmt->close();
+                $flashMsg = 'The user has been removed successfully.';
+                $flashType = 'success';
+            }
         } else {
             $flashMsg = 'You cannot delete your own account or invalid user ID.';
             $flashType = 'error';
@@ -38,15 +43,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $flashMsg = 'Invalid security token. Please refresh and try again.';
         $flashType = 'error';
+    } elseif (!$conn) {
+        $flashMsg = 'Cannot delete message: Database is currently offline.';
+        $flashType = 'error';
     } else {
         $delMsgId = (int)($_POST['message_id'] ?? 0);
         if ($delMsgId > 0) {
             $stmt = $conn->prepare("DELETE FROM messages WHERE id = ?");
-            $stmt->bind_param('i', $delMsgId);
-            $stmt->execute();
-            $stmt->close();
-            $flashMsg = 'Message inquiry deleted successfully.';
-            $flashType = 'success';
+            if ($stmt) {
+                $stmt->bind_param('i', $delMsgId);
+                $stmt->execute();
+                $stmt->close();
+                $flashMsg = 'Message inquiry deleted successfully.';
+                $flashType = 'success';
+            }
         }
     }
     $defaultTab = 'messages';
@@ -65,11 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $recipientName = trim($_POST['recipient_name'] ?? 'Valued User');
 
         if ($msgId > 0 && !empty($replyText) && !empty($toEmail)) {
-            // Update database
-            $stmt = $conn->prepare("UPDATE messages SET status = 'replied', admin_reply = ?, replied_at = NOW(), user_read_at = NULL, admin_read_at = NOW() WHERE id = ?");
-            $stmt->bind_param('si', $replyText, $msgId);
-            $stmt->execute();
-            $stmt->close();
+            // Update database if available
+            if ($conn) {
+                $stmt = $conn->prepare("UPDATE messages SET status = 'replied', admin_reply = ?, replied_at = NOW(), user_read_at = NULL, admin_read_at = NOW() WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param('si', $replyText, $msgId);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
 
             // Send Email to user from Admin Email
             $adminEmail = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : 'songkimsreng001@gmail.com';
@@ -94,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
             @mail($safeToEmail, $emailSubject, $emailBody, $headers);
 
-            $flashMsg = 'Your reply has been sent via email to ' . htmlspecialchars($toEmail) . ' and saved to the dashboard.';
+            $flashMsg = 'Your reply has been sent via email to ' . htmlspecialchars($toEmail) . ($conn ? ' and saved to the dashboard.' : '.');
             $flashType = 'success';
         } else {
             $flashMsg = 'Please enter a reply message before submitting.';
@@ -106,28 +120,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Search Users
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
 if (!empty($search)) {
     $defaultTab = 'users';
 }
 
-// Stats
-$totalUsers   = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'user'")->fetch_assoc()['c'];
-$totalAdmins  = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'admin'")->fetch_assoc()['c'];
-$totalGoogle  = $conn->query("SELECT COUNT(*) as c FROM users WHERE google_id IS NOT NULL AND google_id != ''")->fetch_assoc()['c'];
-$totalAll     = $conn->query("SELECT COUNT(*) as c FROM users")->fetch_assoc()['c'];
+// Defaults for Stats
+$totalUsers   = 0;
+$totalAdmins  = 1;
+$totalGoogle  = 1;
+$totalAll     = 1;
 
-// Message Stats
-$totalMsgs    = $conn->query("SELECT COUNT(*) as c FROM messages")->fetch_assoc()['c'];
-$pendingMsgs  = $conn->query("SELECT COUNT(*) as c FROM messages WHERE status = 'pending'")->fetch_assoc()['c'];
-$repliedMsgs  = $conn->query("SELECT COUNT(*) as c FROM messages WHERE status = 'replied'")->fetch_assoc()['c'];
+// Message Stats Defaults
+$totalMsgs    = 0;
+$pendingMsgs  = 0;
+$repliedMsgs  = 0;
 
-// Fetch Messages
-$messages = $conn->query("SELECT m.*, u.avatar as user_avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC");
+$users = null;
+$messages = null;
+$recentMessages = null;
+$recentUsers = null;
 
-// Recent items for Overview Tab
-$recentMessages = $conn->query("SELECT m.*, u.avatar as user_avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC LIMIT 5");
-$recentUsers = $conn->query("SELECT * FROM users ORDER BY created_at DESC LIMIT 5");
+if ($conn) {
+    if (!empty($search)) {
+        $stmt = $conn->prepare("SELECT * FROM users WHERE name LIKE ? OR email LIKE ? ORDER BY created_at DESC");
+        if ($stmt) {
+            $like = '%' . $search . '%';
+            $stmt->bind_param('ss', $like, $like);
+            $stmt->execute();
+            $users = $stmt->get_result();
+            $stmt->close();
+        }
+    } else {
+        $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+    }
+
+    // Stats
+    $uQ = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'user'");
+    if ($uQ) $totalUsers = (int)($uQ->fetch_assoc()['c'] ?? 0);
+
+    $aQ = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'admin'");
+    if ($aQ) $totalAdmins = (int)($aQ->fetch_assoc()['c'] ?? 0);
+
+    $gQ = $conn->query("SELECT COUNT(*) as c FROM users WHERE google_id IS NOT NULL AND google_id != ''");
+    if ($gQ) $totalGoogle = (int)($gQ->fetch_assoc()['c'] ?? 0);
+
+    $allQ = $conn->query("SELECT COUNT(*) as c FROM users");
+    if ($allQ) $totalAll = (int)($allQ->fetch_assoc()['c'] ?? 0);
+
+    // Message Stats
+    $mQ = $conn->query("SELECT COUNT(*) as c FROM messages");
+    if ($mQ) $totalMsgs = (int)($mQ->fetch_assoc()['c'] ?? 0);
+
+    $pQ = $conn->query("SELECT COUNT(*) as c FROM messages WHERE status = 'pending'");
+    if ($pQ) $pendingMsgs = (int)($pQ->fetch_assoc()['c'] ?? 0);
+
+    $rQ = $conn->query("SELECT COUNT(*) as c FROM messages WHERE status = 'replied'");
+    if ($rQ) $repliedMsgs = (int)($rQ->fetch_assoc()['c'] ?? 0);
+
+    // Fetch Messages
+    $messages = $conn->query("SELECT m.*, u.avatar as user_avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC");
+
+    // Recent items for Overview Tab
+    $recentMessages = $conn->query("SELECT m.*, u.avatar as user_avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC LIMIT 5");
+    $recentUsers = $conn->query("SELECT * FROM users ORDER BY created_at DESC LIMIT 5");
+} else {
+    if (!$flashMsg) {
+        $flashMsg = 'Database is currently offline. Connect a remote MySQL database on Vercel to load live user records and inquiries.';
+        $flashType = 'warning';
+    }
+}
 
 $user = getCurrentUser();
 require_once __DIR__ . '/../includes/header.php';

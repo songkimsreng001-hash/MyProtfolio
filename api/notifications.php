@@ -31,6 +31,18 @@ if (!$user) {
     exit;
 }
 
+if (!$conn) {
+    echo json_encode([
+        'status'               => 'success',
+        'logged_in'            => true,
+        'unread_count'         => 0,
+        'not_replied_count'    => 0,
+        'unread_replies_count' => 0,
+        'notifications'        => []
+    ]);
+    exit;
+}
+
 $userId    = (int)$user['id'];
 $userEmail = $user['email'];
 $isAdmin   = ($user['role'] === 'admin');

@@ -26,6 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
 
             if (empty($email) || empty($password)) {
                 $error = 'Please fill in all fields.';
+            } elseif (!$conn) {
+                $error = 'Database service is currently offline. Please sign in using "Continue with Google".';
             } else {
                 $stmt = $conn->prepare("SELECT id, name, email, password, role, avatar, google_id FROM users WHERE email = ?");
                 $stmt->bind_param('s', $email);

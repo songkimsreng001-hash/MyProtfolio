@@ -60,22 +60,18 @@ if (empty($subject) || empty($message)) {
     exit;
 }
 
-// 1. Save message to database
-$stmt = $conn->prepare("INSERT INTO messages (user_id, name, email, subject, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
-$stmt->bind_param('issss', $userId, $name, $email, $subject, $message);
-
-if (!$stmt->execute()) {
-    recordRateLimitAttempt('contact_send', 300);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'Database error: Could not record your message.'
-    ]);
-    $stmt->close();
-    exit;
+// 1. Save message to database if available
+$messageId = null;
+if ($conn) {
+    $stmt = $conn->prepare("INSERT INTO messages (user_id, name, email, subject, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+    if ($stmt) {
+        $stmt->bind_param('issss', $userId, $name, $email, $subject, $message);
+        if ($stmt->execute()) {
+            $messageId = $stmt->insert_id;
+        }
+        $stmt->close();
+    }
 }
-
-$messageId = $stmt->insert_id;
-$stmt->close();
 recordRateLimitAttempt('contact_send', 300);
 
 // 2. Send email notification to Admin with CRLF injection sanitization
