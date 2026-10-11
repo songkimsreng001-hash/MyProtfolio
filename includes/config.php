@@ -23,11 +23,14 @@ if (!defined('GOOGLE_REDIRECT_URI')) {
     if (!empty($envRedirect)) {
         define('GOOGLE_REDIRECT_URI', $envRedirect);
     } else {
-        $baseUrl = getAppBaseUrl();
-        if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') === false) {
-            $baseUrl = preg_replace('#^http://#i', 'https://', $baseUrl);
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
+            $baseUrl = getAppBaseUrl();
+            define('GOOGLE_REDIRECT_URI', $baseUrl . '/oauth/callback');
+        } else {
+            // Live production domain (Vercel) - ALWAYS enforce HTTPS
+            define('GOOGLE_REDIRECT_URI', 'https://' . $host . '/oauth/callback');
         }
-        define('GOOGLE_REDIRECT_URI', $baseUrl . '/oauth/callback');
     }
 }
 
