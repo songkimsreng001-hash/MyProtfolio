@@ -23,7 +23,11 @@ if (!defined('GOOGLE_REDIRECT_URI')) {
     if (!empty($envRedirect)) {
         define('GOOGLE_REDIRECT_URI', $envRedirect);
     } else {
-        define('GOOGLE_REDIRECT_URI', getAppBaseUrl() . '/oauth/callback');
+        $baseUrl = getAppBaseUrl();
+        if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') === false) {
+            $baseUrl = preg_replace('#^http://#i', 'https://', $baseUrl);
+        }
+        define('GOOGLE_REDIRECT_URI', $baseUrl . '/oauth/callback');
     }
 }
 
@@ -40,7 +44,17 @@ if (!defined('ADMIN_EMAIL')) {
  * Get Base Web URL of the Application
  */
 function getAppBaseUrl() {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $isHttps = (
+        (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
+        (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ||
+        (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+        (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+        (isset($_SERVER['HTTP_HOST']) && (
+            strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false ||
+            strpos($_SERVER['HTTP_HOST'], 'localhost') === false
+        ))
+    );
+    $protocol = $isHttps ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $script = $_SERVER['SCRIPT_NAME'] ?? '';
     $dir = dirname($script);
