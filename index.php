@@ -38,16 +38,43 @@ require_once 'includes/header.php';
             </div>
             <div class="col-lg-6">
                 <div class="hero-image-wrapper fade-up delay-2">
-                    <div class="hero-img-frame"> <img src="assets/images/Kimsreng Song.JPG" alt="Profile Photo"
-                            class="hero-img">
-                        <!-- Replace src with your actual photo -->
-                        <div style="width:100%;
-                                height:100%;display:flex;
-                                align-items:center;
-                                justify-content:center;
-                                font-size:6rem;
-                                color:rgba(108,99,255,0.3);">
-                            <i class="bi bi-person-fill"></i>
+                    <div class="hero-img-frame">
+                        <div id="heroImageCarousel" class="carousel slide h-100" data-bs-ride="carousel" data-bs-interval="3500" data-bs-pause="hover" data-bs-touch="true">
+                            <!-- Indicators -->
+                            <div class="carousel-indicators hero-carousel-indicators">
+                                <button type="button" data-bs-target="#heroImageCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Photo 1"></button>
+                                <button type="button" data-bs-target="#heroImageCarousel" data-bs-slide-to="1" aria-label="Photo 2"></button>
+                                <button type="button" data-bs-target="#heroImageCarousel" data-bs-slide-to="2" aria-label="Photo 3"></button>
+                                <button type="button" data-bs-target="#heroImageCarousel" data-bs-slide-to="3" aria-label="Photo 4"></button>
+                                <button type="button" data-bs-target="#heroImageCarousel" data-bs-slide-to="4" aria-label="Photo 5"></button>
+                            </div>
+
+                            <!-- Carousel Slides -->
+                            <div class="carousel-inner h-100">
+                                <div class="carousel-item active h-100">
+                                    <img src="assets/images/Kimsreng Song.JPG" alt="Kimsreng Song - Photo 1" class="hero-img" loading="eager">
+                                </div>
+                                <div class="carousel-item h-100">
+                                    <img src="assets/images/SK2.JPG" alt="Kimsreng Song - Photo 2" class="hero-img" loading="lazy">
+                                </div>
+                                <div class="carousel-item h-100">
+                                    <img src="assets/images/SK3.JPG" alt="Kimsreng Song - Photo 3" class="hero-img" loading="lazy">
+                                </div>
+                                <div class="carousel-item h-100">
+                                    <img src="assets/images/SK4.JPG" alt="Kimsreng Song - Photo 4" class="hero-img" loading="lazy">
+                                </div>
+                                <div class="carousel-item h-100">
+                                    <img src="assets/images/SK5.JPG" alt="Kimsreng Song - Photo 5" class="hero-img" loading="lazy">
+                                </div>
+                            </div>
+
+                            <!-- Navigation Controls -->
+                            <button class="carousel-control-prev hero-carousel-btn" type="button" data-bs-target="#heroImageCarousel" data-bs-slide="prev" aria-label="Previous Photo">
+                                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                            </button>
+                            <button class="carousel-control-next hero-carousel-btn" type="button" data-bs-target="#heroImageCarousel" data-bs-slide="next" aria-label="Next Photo">
+                                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                            </button>
                         </div>
                         <div class="code-badge"><i class="bi bi-code-slash"></i></div>
                     </div>

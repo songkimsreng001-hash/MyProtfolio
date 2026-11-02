@@ -399,25 +399,118 @@ body::before {
     overflow: hidden;
     position: relative;
     box-shadow: var(--card-shadow);
+    user-select: none;
 }
 
-.hero-img-frame img {
+.hero-img-frame .carousel,
+.hero-img-frame .carousel-inner,
+.hero-img-frame .carousel-item {
+    width: 100%;
+    height: 100%;
+}
+
+.hero-img-frame .carousel-item {
+    transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hero-img-frame img,
+.hero-img-frame .hero-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.95;
+    object-position: center 20%;
+    opacity: 0.96;
+    display: block;
 }
 
 .hero-img-frame .code-badge {
     position: absolute;
-    bottom: 20px;
-    right: -20px;
+    bottom: 18px;
+    right: 18px;
     background: var(--accent);
     color: white;
     border-radius: 14px;
-    padding: 12px 16px;
-    font-size: 1.4rem;
+    padding: 10px 14px;
+    font-size: 1.25rem;
     box-shadow: 0 10px 30px rgba(108, 99, 255, 0.4);
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* Hero Carousel Controls & Indicators */
+.hero-carousel-indicators {
+    bottom: 16px;
+    left: 18px;
+    margin: 0;
+    justify-content: flex-start;
+    gap: 6px;
+    z-index: 4;
+}
+
+.hero-carousel-indicators [data-bs-target] {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.45);
+    transition: all 0.3s ease;
+    opacity: 0.7;
+    margin: 0;
+    padding: 0;
+}
+
+.hero-carousel-indicators .active {
+    width: 22px;
+    border-radius: 10px;
+    background-color: var(--accent);
+    opacity: 1;
+}
+
+.hero-carousel-btn {
+    width: 36px;
+    height: 36px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(18, 19, 43, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 4;
+    cursor: pointer;
+}
+
+.hero-img-frame:hover .hero-carousel-btn {
+    opacity: 0.95;
+}
+
+.hero-carousel-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    opacity: 1;
+    transform: translateY(-50%) scale(1.08);
+}
+
+.hero-carousel-btn.carousel-control-prev {
+    left: 12px;
+}
+
+.hero-carousel-btn.carousel-control-next {
+    right: 12px;
+}
+
+@media (max-width: 991px) {
+    .hero-carousel-btn {
+        opacity: 0.75;
+    }
 }
 
 .hero-exp-badge {

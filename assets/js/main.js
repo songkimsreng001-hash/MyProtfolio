@@ -63,6 +63,27 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// ===== HERO IMAGE CAROUSEL INITIALIZATION =====
+function initHeroCarousel() {
+    const heroSlider = document.getElementById('heroImageCarousel');
+    if (heroSlider && typeof bootstrap !== 'undefined' && bootstrap.Carousel) {
+        const existingInstance = bootstrap.Carousel.getInstance(heroSlider);
+        if (!existingInstance) {
+            new bootstrap.Carousel(heroSlider, {
+                interval: 3500,
+                ride: 'carousel',
+                pause: 'hover',
+                touch: true
+            });
+        }
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroCarousel);
+} else {
+    initHeroCarousel();
+}
+
 // ===== FADE-UP OBSERVER =====
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
