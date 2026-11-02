@@ -60,72 +60,93 @@ if (!$conn || $conn->connect_error) {
 }
 
 // Auto-check and add missing columns/tables if connected (guard to run once per session)
-if ($conn && !isset($_SESSION['portfolio_schema_verified'])) {
-    $conn->set_charset('utf8mb4');
-    $columns = [];
-    $colResult = $conn->query("SHOW COLUMNS FROM users");
-if ($colResult) {
-    while ($row = $colResult->fetch_assoc()) {
-        $columns[$row['Field']] = $row;
-    }
-    
-    if (!isset($columns['google_id'])) {
-        $conn->query("ALTER TABLE users ADD COLUMN google_id VARCHAR(100) DEFAULT NULL AFTER email");
-    }
-    if (!isset($columns['avatar'])) {
-        $conn->query("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT NULL AFTER role");
-    }
-    if (!isset($columns['updated_at'])) {
-        $conn->query("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-    }
-    // Ensure password allows NULL for pure Google sign in accounts
-    if (isset($columns['password']) && $columns['password']['Null'] === 'NO') {
-        $conn->query("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL");
-    }
-}
+if ($conn && (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['portfolio_schema_verified']))) {
+    try {
+        $conn->set_charset('utf8mb4');
 
-// Auto-create messages table if not present
-$conn->query("CREATE TABLE IF NOT EXISTS messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    subject VARCHAR(200) NOT NULL,
-    message TEXT NOT NULL,
-    status ENUM('pending', 'replied') DEFAULT 'pending',
-    admin_reply TEXT DEFAULT NULL,
-    replied_at TIMESTAMP NULL DEFAULT NULL,
-    user_read_at TIMESTAMP NULL DEFAULT NULL,
-    admin_read_at TIMESTAMP NULL DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-)");
+        // 1. Ensure users table exists
+        $conn->query("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(150) NOT NULL UNIQUE,
+            google_id VARCHAR(100) DEFAULT NULL,
+            password VARCHAR(255) DEFAULT NULL,
+            role ENUM('user', 'admin') DEFAULT 'user',
+            avatar VARCHAR(255) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
 
-// Ensure columns exist
-$msgCols = [];
-$msgRes = $conn->query("SHOW COLUMNS FROM messages");
-if ($msgRes) {
-    while ($r = $msgRes->fetch_assoc()) {
-        $msgCols[$r['Field']] = $r;
+        $columns = [];
+        $colResult = $conn->query("SHOW COLUMNS FROM users");
+        if ($colResult) {
+            while ($row = $colResult->fetch_assoc()) {
+                $columns[$row['Field']] = $row;
+            }
+            
+            if (!isset($columns['google_id'])) {
+                $conn->query("ALTER TABLE users ADD COLUMN google_id VARCHAR(100) DEFAULT NULL AFTER email");
+            }
+            if (!isset($columns['avatar'])) {
+                $conn->query("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT NULL AFTER role");
+            }
+            if (!isset($columns['updated_at'])) {
+                $conn->query("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            }
+            // Ensure password allows NULL for pure Google sign in accounts
+            if (isset($columns['password']) && $columns['password']['Null'] === 'NO') {
+                $conn->query("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL");
+            }
+        }
+
+        // 2. Ensure messages table exists
+        $conn->query("CREATE TABLE IF NOT EXISTS messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT DEFAULT NULL,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            subject VARCHAR(200) NOT NULL,
+            message TEXT NOT NULL,
+            status ENUM('pending', 'replied') DEFAULT 'pending',
+            admin_reply TEXT DEFAULT NULL,
+            replied_at TIMESTAMP NULL DEFAULT NULL,
+            user_read_at TIMESTAMP NULL DEFAULT NULL,
+            admin_read_at TIMESTAMP NULL DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        )");
+
+        // Ensure columns exist on messages
+        $msgCols = [];
+        $msgRes = $conn->query("SHOW COLUMNS FROM messages");
+        if ($msgRes) {
+            while ($r = $msgRes->fetch_assoc()) {
+                $msgCols[$r['Field']] = $r;
+            }
+            if (!isset($msgCols['user_read_at'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN user_read_at TIMESTAMP NULL DEFAULT NULL AFTER replied_at");
+            }
+            if (!isset($msgCols['admin_read_at'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN admin_read_at TIMESTAMP NULL DEFAULT NULL AFTER user_read_at");
+            }
+            if (!isset($msgCols['attachment_url'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(255) NULL DEFAULT NULL AFTER admin_reply");
+            }
+            if (!isset($msgCols['attachment_type'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(50) NULL DEFAULT NULL AFTER attachment_url");
+            }
+            if (!isset($msgCols['attachment_name'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN attachment_name VARCHAR(255) NULL DEFAULT NULL AFTER attachment_type");
+            }
+            if (!isset($msgCols['reactions'])) {
+                $conn->query("ALTER TABLE messages ADD COLUMN reactions TEXT NULL DEFAULT NULL AFTER attachment_name");
+            }
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['portfolio_schema_verified'] = true;
+        }
+    } catch (Throwable $schemaEx) {
+        error_log('Database schema check error: ' . $schemaEx->getMessage());
     }
-    if (!isset($msgCols['user_read_at'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN user_read_at TIMESTAMP NULL DEFAULT NULL AFTER replied_at");
-    }
-    if (!isset($msgCols['admin_read_at'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN admin_read_at TIMESTAMP NULL DEFAULT NULL AFTER user_read_at");
-    }
-    if (!isset($msgCols['attachment_url'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(255) NULL DEFAULT NULL AFTER admin_reply");
-    }
-    if (!isset($msgCols['attachment_type'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(50) NULL DEFAULT NULL AFTER attachment_url");
-    }
-    if (!isset($msgCols['attachment_name'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN attachment_name VARCHAR(255) NULL DEFAULT NULL AFTER attachment_type");
-    }
-    if (!isset($msgCols['reactions'])) {
-        $conn->query("ALTER TABLE messages ADD COLUMN reactions TEXT NULL DEFAULT NULL AFTER attachment_name");
-    }
-}
-    $_SESSION['portfolio_schema_verified'] = true;
 }
