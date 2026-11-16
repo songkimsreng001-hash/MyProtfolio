@@ -413,7 +413,7 @@ require_once 'includes/header.php';
                     'url'      => 'https://eventhubpro-navy.vercel.app',
                     'emoji'    => '🎟️',
                     'desc'     => 'Modern event management and ticketing platform designed for discovering, organizing, and booking events with real-time schedules and seamless checkout.',
-                    'tags'     => ['React', 'Tailwind CSS', 'Event Platform', 'Modern UI', 'Vercel'],
+                    'tags'     => ['PHP', 'Tailwind CSS', 'Event Platform', 'Modern UI', 'Vercel'],
                     'thumb_bg' => 'background: radial-gradient(circle at 50% 50%, rgba(244, 114, 182, 0.25) 0%, rgba(167, 139, 250, 0.12) 100%);',
                     'delay'    => 'delay-2'
                 ],
@@ -422,7 +422,7 @@ require_once 'includes/header.php';
                     'url'      => 'https://24-7-nham.vercel.app',
                     'emoji'    => '🍔',
                     'desc'     => 'Online food & beverage ordering and delivery web application connecting hungry customers with 24/7 foods, snacks, drinks, and express delivery.',
-                    'tags'     => ['React', 'Food Delivery', 'E-Commerce', 'Responsive', 'Vercel'],
+                    'tags'     => ['Laravel', 'Food Delivery', 'E-Commerce', 'Responsive', 'Vercel'],
                     'thumb_bg' => 'background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.25) 0%, rgba(251, 191, 36, 0.12) 100%);',
                     'delay'    => 'delay-3'
                 ],
