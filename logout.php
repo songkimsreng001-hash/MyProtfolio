@@ -2,17 +2,12 @@
 // logout.php
 require_once __DIR__ . '/includes/auth.php';
 
-$_SESSION = [];
+logoutUser();
 
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+$baseUrl = getAppBaseUrl();
+if (!headers_sent()) {
+    header('Location: ' . $baseUrl . '/index.php');
+} else {
+    echo '<script>window.location.href=' . json_encode($baseUrl . '/index.php') . ';</script>';
 }
-
-session_destroy();
-header('Location: ' . getAppBaseUrl() . '/index.php');
 exit;
-

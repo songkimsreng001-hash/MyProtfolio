@@ -3,17 +3,21 @@
 require_once 'includes/auth.php';
 require_once 'includes/db.php';
 require_once 'includes/config.php';
-require_once 'includes/header.php';
 
 if (isLoggedIn()) {
-    header('Location: index.php');
+    $redirectUrl = isAdmin() ? (getAppBaseUrl() . '/dashboard/admin.php') : (getAppBaseUrl() . '/index.php');
+    if (!headers_sent()) {
+        header('Location: ' . $redirectUrl);
+    } else {
+        echo '<script>window.location.href=' . json_encode($redirectUrl) . ';</script>';
+    }
     exit;
 }
 
 $error   = $_GET['error'] ?? '';
 $success = $_GET['success'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['email'])) {
     if (!verifyCsrfToken()) {
         $error = 'Invalid or expired session security token. Please refresh and try again.';
     } else {
@@ -65,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 if ($authenticated && $user) {
                     resetRateLimit('login');
                     setSession($user);
+                    $redirectTarget = ($user['role'] === 'admin') ? (getAppBaseUrl() . '/dashboard/admin.php') : (getAppBaseUrl() . '/index.php');
                     $success = 'Login successful! Redirecting...';
                 } else {
                     recordRateLimitAttempt('login', 300);
@@ -74,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
         }
     }
 }
+require_once 'includes/header.php';
 ?>
 
 <?php include 'includes/navbar.php'; ?>
@@ -265,7 +271,7 @@ Swal.fire({
     timer: 1500,
     showConfirmButton: false
 }).then(() => {
-    window.location.href = 'index.php';
+    window.location.href = '<?= !empty($redirectTarget) ? $redirectTarget : "index.php" ?>';
 });
 <?php endif; ?>
 </script>

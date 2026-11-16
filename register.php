@@ -3,17 +3,21 @@
 require_once 'includes/auth.php';
 require_once 'includes/db.php';
 require_once 'includes/config.php';
-require_once 'includes/header.php';
 
 if (isLoggedIn()) {
-    header('Location: index.php');
+    $redirectUrl = isAdmin() ? (getAppBaseUrl() . '/dashboard/admin.php') : (getAppBaseUrl() . '/index.php');
+    if (!headers_sent()) {
+        header('Location: ' . $redirectUrl);
+    } else {
+        echo '<script>window.location.href=' . json_encode($redirectUrl) . ';</script>';
+    }
     exit;
 }
 
 $error   = $_GET['error'] ?? '';
 $success = $_GET['success'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['name'])) {
     if (!verifyCsrfToken()) {
         $error = 'Invalid or expired session security token. Please refresh and try again.';
     } else {
@@ -64,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
         }
     }
 }
+require_once 'includes/header.php';
 ?>
 
 <?php include 'includes/navbar.php'; ?>
