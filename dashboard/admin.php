@@ -12,7 +12,7 @@ $flashType = 'success';
 $defaultTab = 'dashboard';
 
 // Handle delete user (POST with CSRF)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_user') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_user') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $flashMsg = 'Invalid security token. Please refresh and try again.';
         $flashType = 'error';
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle delete message (POST with CSRF)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_message') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_message') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $flashMsg = 'Invalid security token. Please refresh and try again.';
         $flashType = 'error';
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle reply to message (POST with CSRF)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reply_message') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reply_message') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $flashMsg = 'Invalid security token. Please refresh and try again.';
         $flashType = 'error';
