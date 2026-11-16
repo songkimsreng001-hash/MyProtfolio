@@ -391,50 +391,75 @@ require_once 'includes/header.php';
                 <div class="section-label mb-2">My Projects</div>
                 <h2 class="section-title">Featured Projects</h2>
             </div>
-            <a href="#" class="btn btn-outline-accent btn-sm">View All</a>
+            <a href="https://github.com/songkimsreng001-hash?tab=repositories" target="_blank" rel="noopener noreferrer" class="btn btn-outline-accent btn-sm">
+                <i class="bi bi-github me-1"></i>View All on GitHub
+            </a>
         </div>
 
         <div class="row g-4">
             <?php
             $projects = [
                 [
-                    'emoji' => '🐳',
-                    'name' => 'Docker API Gateway',
-                    'desc' => 'A containerized microservices API built with PHP and Laravel.',
-                    'tags' => ['Laravel', 'Docker', 'Vue.js', 'Bootstrap'],
-                    'delay' => 'delay-1'
+                    'name'     => 'My Protfolio',
+                    'url'      => 'https://my-protfolio-beta-six.vercel.app',
+                    'emoji'    => '💼',
+                    'desc'     => 'Full-stack personal portfolio featuring Google OAuth 2.0 authentication, an interactive admin panel, live chat messaging, and a modern responsive dark/light UI.',
+                    'tags'     => ['PHP', 'Google OAuth', 'Bootstrap 5', 'MySQL', 'Vercel'],
+                    'thumb_bg' => 'background: radial-gradient(circle at 50% 50%, rgba(108, 99, 255, 0.25) 0%, rgba(56, 189, 248, 0.12) 100%);',
+                    'delay'    => 'delay-1'
                 ],
                 [
-                    'emoji' => '💻',
-                    'name' => 'Vue.js Fullstack Dashboard',
-                    'desc' => 'An interactive real-time management dashboard with a Laravel backend.',
-                    'tags' => ['Laravel', 'PHP', 'XAMPP', 'Tailwind CSS'],
-                    'delay' => 'delay-2'
+                    'name'     => 'EventHub Pro',
+                    'url'      => 'https://eventhubpro-navy.vercel.app',
+                    'emoji'    => '🎟️',
+                    'desc'     => 'Modern event management and ticketing platform designed for discovering, organizing, and booking events with real-time schedules and seamless checkout.',
+                    'tags'     => ['React', 'Tailwind CSS', 'Event Platform', 'Modern UI', 'Vercel'],
+                    'thumb_bg' => 'background: radial-gradient(circle at 50% 50%, rgba(244, 114, 182, 0.25) 0%, rgba(167, 139, 250, 0.12) 100%);',
+                    'delay'    => 'delay-2'
                 ],
                 [
-                    'emoji' => '📱',
-                    'name' => 'Android Companion App',
-                    'desc' => 'A native mobile application that syncs seamlessly with a Laravel API.',
-                    'tags' => ['Android Studio', 'Laravel', 'API'],
-                    'delay' => 'delay-3'
+                    'name'     => '24/7 NHAM',
+                    'url'      => 'https://24-7-nham.vercel.app',
+                    'emoji'    => '🍔',
+                    'desc'     => 'Online food & beverage ordering and delivery web application connecting hungry customers with 24/7 foods, snacks, drinks, and express delivery.',
+                    'tags'     => ['React', 'Food Delivery', 'E-Commerce', 'Responsive', 'Vercel'],
+                    'thumb_bg' => 'background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.25) 0%, rgba(251, 191, 36, 0.12) 100%);',
+                    'delay'    => 'delay-3'
                 ],
             ];
             ?>
 
             <?php foreach ($projects as $p): ?>
             <div class="col-md-4 fade-up <?= $p['delay'] ?>">
-                <div class="project-card">
-                    <div class="project-thumb">
-                        <?= $p['emoji'] ?>
-                        <a href="#" class="project-link-btn"><i class="bi bi-arrow-up-right"></i></a>
+                <div class="project-card d-flex flex-column h-100">
+                    <div class="project-thumb position-relative" style="<?= $p['thumb_bg'] ?>">
+                        <span class="project-icon-display"><?= $p['emoji'] ?></span>
+                        <span class="project-live-badge">
+                            <span class="pulse-dot"></span> Live
+                        </span>
+                        <a href="<?= htmlspecialchars($p['url']) ?>" target="_blank" rel="noopener noreferrer" class="project-link-btn" title="Open <?= htmlspecialchars($p['name']) ?> in new tab" aria-label="Open <?= htmlspecialchars($p['name']) ?>">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </a>
                     </div>
-                    <div class="project-body">
-                        <h5><?= htmlspecialchars($p['name']) ?></h5>
-                        <p><?= htmlspecialchars($p['desc']) ?></p>
-                        <div>
+                    <div class="project-body d-flex flex-column flex-grow-1">
+                        <h5 class="mb-2">
+                            <a href="<?= htmlspecialchars($p['url']) ?>" target="_blank" rel="noopener noreferrer" class="project-title-link">
+                                <?= htmlspecialchars($p['name']) ?>
+                            </a>
+                        </h5>
+                        <p class="flex-grow-1 text-muted"><?= htmlspecialchars($p['desc']) ?></p>
+                        <div class="project-tags mb-3">
                             <?php foreach ($p['tags'] as $tag): ?>
                             <span class="tech-tag"><?= htmlspecialchars($tag) ?></span>
                             <?php endforeach; ?>
+                        </div>
+                        <div class="project-footer pt-3 border-top d-flex justify-content-between align-items-center" style="border-color: var(--border-subtle) !important;">
+                            <span class="project-url-text text-truncate me-2" style="font-size: 0.8rem; color: var(--text-muted); max-width: 170px;">
+                                <i class="bi bi-link-45deg me-1"></i><?= parse_url($p['url'], PHP_URL_HOST) ?>
+                            </span>
+                            <a href="<?= htmlspecialchars($p['url']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-accent px-3 py-1 text-nowrap" style="font-size: 0.85rem; border-radius: 8px;">
+                                Visit Site <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
