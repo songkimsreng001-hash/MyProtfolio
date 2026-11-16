@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS messages (
     status ENUM('pending', 'replied') DEFAULT 'pending',
     admin_reply TEXT DEFAULT NULL,
     replied_at TIMESTAMP NULL DEFAULT NULL,
+    user_read_at TIMESTAMP NULL DEFAULT NULL,
+    admin_read_at TIMESTAMP NULL DEFAULT NULL,
+    attachment_url VARCHAR(255) NULL DEFAULT NULL,
+    attachment_type VARCHAR(50) NULL DEFAULT NULL,
+    attachment_name VARCHAR(255) NULL DEFAULT NULL,
+    reactions TEXT NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );

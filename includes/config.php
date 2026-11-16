@@ -52,10 +52,7 @@ function getAppBaseUrl() {
         (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ||
         (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
         (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
-        (isset($_SERVER['HTTP_HOST']) && (
-            strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false ||
-            strpos($_SERVER['HTTP_HOST'], 'localhost') === false
-        ))
+        (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false)
     );
     $protocol = $isHttps ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

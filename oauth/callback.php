@@ -15,7 +15,8 @@ if (isLoggedIn()) {
 }
 
 // Rate limit OAuth attempts (max 15 attempts per 5 minutes per IP)
-if (!checkRateLimit('oauth_callback', 15, 300)) {
+$rateLimit = checkRateLimit('oauth_callback', 15, 300);
+if (!$rateLimit['allowed']) {
     header('Location: ' . $baseUrl . '/login.php?error=' . urlencode('Too many OAuth requests. Please wait a few minutes and try again.'));
     exit;
 }

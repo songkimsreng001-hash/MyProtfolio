@@ -11,10 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
         $isSecure = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
                     (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ||
                     (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
-                    (isset($_SERVER['HTTP_HOST']) && (
-                        strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false ||
-                        strpos($_SERVER['HTTP_HOST'], 'localhost') === false
-                    ));
+                    (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false);
 
         // 7 days cookie lifetime for persistent session
         $cookieLifetime = 604800;
