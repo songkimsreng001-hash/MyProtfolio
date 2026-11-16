@@ -4,6 +4,11 @@
 
 require_once __DIR__ . '/config.php';
 
+// If connection is already open and valid, reuse it
+if (isset($conn) && $conn instanceof mysqli && @$conn->ping()) {
+    return;
+}
+
 // Detect whether running locally or on production server
 $isVercel = !empty(getenv('VERCEL')) ||
             (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false);
@@ -20,6 +25,13 @@ $tidbPort = 4000;
 $tidbUser = '5h8RDADJ5sK8taX.root';
 $tidbPass = 'jg2Hs8LlAdedWjPE';
 $tidbName = 'portfolio';
+
+// Local XAMPP MySQL Configuration
+$localHost = '127.0.0.1';
+$localPort = 3306;
+$localUser = 'root';
+$localPass = '';
+$localName = 'portfolio';
 
 // Check for DATABASE_URL environment variable (common in Vercel / Cloud PaaS)
 $envDbUrl = getenv('DATABASE_URL');
@@ -40,11 +52,11 @@ if (!empty($envDbUrl)) {
     }
 }
 
-// Resolve final database credentials
+// Resolve primary database configuration
 if (!defined('DB_HOST')) {
     if (!empty($parsedHost)) {
         define('DB_HOST', $parsedHost);
-        define('DB_PORT', $parsedPort ?: 4000);
+        define('DB_PORT', (int)($parsedPort ?: 4000));
         define('DB_USER', $parsedUser ?: $tidbUser);
         define('DB_PASS', $parsedPass !== null ? $parsedPass : $tidbPass);
         define('DB_NAME', !empty($parsedName) ? $parsedName : $tidbName);
@@ -58,15 +70,15 @@ if (!defined('DB_HOST')) {
         }
         define('DB_PASS', ($pass !== false && $pass !== '') ? $pass : $tidbPass);
         define('DB_NAME', getenv('DB_NAME') ?: $tidbName);
-    } elseif ($isLocal) {
-        // Local XAMPP Environment (falls back to TiDB Cloud if local MySQL is offline)
-        define('DB_HOST', '127.0.0.1');
-        define('DB_PORT', 3306);
-        define('DB_USER', 'root');
-        define('DB_PASS', '');
-        define('DB_NAME', 'portfolio');
+    } elseif (getenv('USE_LOCAL_DB') === 'true') {
+        // Explicitly configured local MySQL
+        define('DB_HOST', $localHost);
+        define('DB_PORT', $localPort);
+        define('DB_USER', $localUser);
+        define('DB_PASS', $localPass);
+        define('DB_NAME', $localName);
     } else {
-        // Live Production (Vercel) default to TiDB Cloud Serverless
+        // Connect to TiDB Cloud Serverless (shared live database)
         define('DB_HOST', $tidbHost);
         define('DB_PORT', $tidbPort);
         define('DB_USER', $tidbUser);
@@ -78,32 +90,35 @@ if (!defined('DB_HOST')) {
 /**
  * Helper to establish a MySQL / TiDB connection with SSL support
  */
-function createDbConnection($host, $user, $pass, $name, $port) {
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+if (!function_exists('createDbConnection')) {
+    function createDbConnection($host, $user, $pass, $name, $port) {
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    $mysqli = mysqli_init();
-    if (defined('MYSQLI_OPT_CONNECT_TIMEOUT')) {
-        $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, 6);
+        $port = (int)($port ?: 3306);
+        $mysqli = mysqli_init();
+        if (defined('MYSQLI_OPT_CONNECT_TIMEOUT')) {
+            $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, 6);
+        }
+
+        $isTiDB = (
+            strpos($host, 'tidbcloud.com') !== false ||
+            $port == 4000 ||
+            getenv('DB_SSL') === 'true'
+        );
+
+        if ($isTiDB) {
+            // TiDB Cloud requires SSL/TLS encrypted connection
+            $mysqli->ssl_set(NULL, NULL, NULL, NULL, NULL);
+            $ok = @$mysqli->real_connect($host, $user, $pass, $name, $port, NULL, MYSQLI_CLIENT_SSL);
+        } else {
+            $ok = @$mysqli->real_connect($host, $user, $pass, $name, $port);
+        }
+
+        if ($ok && !$mysqli->connect_error) {
+            return $mysqli;
+        }
+        return null;
     }
-
-    $isTiDB = (
-        strpos($host, 'tidbcloud.com') !== false ||
-        $port == 4000 ||
-        getenv('DB_SSL') === 'true'
-    );
-
-    if ($isTiDB) {
-        // TiDB Cloud requires SSL/TLS encrypted connection
-        $mysqli->ssl_set(NULL, NULL, NULL, NULL, NULL);
-        $ok = @$mysqli->real_connect($host, $user, $pass, $name, $port, NULL, MYSQLI_CLIENT_SSL);
-    } else {
-        $ok = @$mysqli->real_connect($host, $user, $pass, $name, $port);
-    }
-
-    if ($ok && !$mysqli->connect_error) {
-        return $mysqli;
-    }
-    return null;
 }
 
 // Attempt primary database connection
@@ -115,17 +130,17 @@ try {
     error_log('Database connection error (' . DB_HOST . '): ' . $e->getMessage());
 }
 
-// Fallback 1: If local MySQL failed or is offline on local machine, try TiDB Cloud!
-if (!$conn && $isLocal) {
+// Fallback: If connecting to TiDB Cloud failed locally (e.g. offline/no internet), try local MySQL!
+if (!$conn && $isLocal && DB_HOST !== $localHost) {
     try {
-        $conn = createDbConnection($tidbHost, $tidbUser, $tidbPass, $tidbName, $tidbPort);
-    } catch (Throwable $fallbackEx) {
+        $conn = createDbConnection($localHost, $localUser, $localPass, $localName, $localPort);
+    } catch (Throwable $localEx) {
         $conn = null;
-        error_log('TiDB Cloud local fallback connection error: ' . $fallbackEx->getMessage());
+        error_log('Local MySQL fallback error: ' . $localEx->getMessage());
     }
 }
 
-// Fallback 2: If on Vercel/Production and custom env failed, fallback to TiDB Cloud
+// Fallback: If custom DB_HOST failed on production, ensure TiDB Cloud is attempted
 if (!$conn && !$isLocal && DB_HOST !== $tidbHost) {
     try {
         $conn = createDbConnection($tidbHost, $tidbUser, $tidbPass, $tidbName, $tidbPort);
